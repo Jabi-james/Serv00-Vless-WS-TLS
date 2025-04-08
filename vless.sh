@@ -38,34 +38,34 @@ bash -c 'ps aux | grep $(whoami) | grep -v "sshd\|bash\|grep" | awk "{print \$2}
 command -v curl &>/dev/null && COMMAND="curl -so" || command -v wget &>/dev/null && COMMAND="wget -qO" || { red "Error: neither curl nor wget found, please install one of them." >&2; exit 1; }
 
 check_port () {
-purple "正在安装中,请稍等...\n"
+purple "Installing, please wait...\n"
 if [[ "$SOCKS" == "true" ]]; then
   port_list=$(devil port list)
   tcp_ports=$(echo "$port_list" | grep -c "tcp")
   udp_ports=$(echo "$port_list" | grep -c "udp")
 
   if [[ $tcp_ports -lt 1 ]]; then
-      red "没有可用的TCP端口,正在调整..."
+      red "No TCP port available, adjusting..."
 
       if [[ $udp_ports -ge 3 ]]; then
           udp_port_to_delete=$(echo "$port_list" | awk '/udp/ {print $1}' | head -n 1)
           devil port del udp $udp_port_to_delete
-          green "已删除udp端口: $udp_port_to_delete"
+          green "Deleted udp port: $udp_port_to_delete"
       fi
 
       while true; do
           tcp_port=$(shuf -i 10000-65535 -n 1)
           result=$(devil port add tcp $tcp_port 2>&1)
           if [[ $result == *"Ok"* ]]; then
-              green "已添加TCP端口: $tcp_port"
+              green "TCP port added: $tcp_port"
               tcp_port1=$tcp_port
               break
           else
-              yellow "端口 $tcp_port 不可用，尝试其他端口..."
+              yellow "Port $tcp_port is not available, try another port..."
           fi
       done
 
-      green "端口已调整完成, 将断开SSH连接, 请重新连接SSH并重新执行脚本"
+      green "The port has been adjusted, The SSH connection will be disconnected, Please reconnect SSH and re-execute the script"
       devil binexec on >/dev/null 2>&1
       kill -9 $(ps -o ppid= -p $$) >/dev/null 2>&1
   else
@@ -73,26 +73,26 @@ if [[ "$SOCKS" == "true" ]]; then
       tcp_port1=$(echo "$tcp_ports" | sed -n '1p')
   fi
   export S5_PORT=$tcp_port1
-  purple "socks5使用的tcp端口: $tcp_port1\n"
+  purple "TCP port used by socks5: $tcp_port1\n"
 else
-    yellow "当前未开启socks5\n"
+    yellow "Socks5 is not currently enabled\n"
 fi
 }
 
 check_website() {
 CURRENT_SITE=$(devil www list | awk -v domain="${CURRENT_DOMAIN}" '$1 == domain && $2 == "nodejs"')
 if [ -n "$CURRENT_SITE" ]; then
-    green "已存在 ${CURRENT_DOMAIN} 的node站点,无需修改\n"
+    green "The node site of ${CURRENT_DOMAIN} already exists and does not need to be modified\n"
 else
     EXIST_SITE=$(devil www list | awk -v domain="${CURRENT_DOMAIN}" '$1 == domain')
     
     if [ -n "$EXIST_SITE" ]; then
         devil www del "${CURRENT_DOMAIN}" >/dev/null 2>&1
         devil www add "${CURRENT_DOMAIN}" nodejs /usr/local/bin/node18 > /dev/null 2>&1
-        green "已删除旧的站点并创建新的${CURRENT_DOMAIN} nodejs站点\n"
+        green "The old site was deleted and a new one created${CURRENT_DOMAIN} nodejs site\n"
     else
         devil www add "${CURRENT_DOMAIN}" nodejs /usr/local/bin/node18 > /dev/null 2>&1
-        green "已创建 ${CURRENT_DOMAIN} nodejs站点\n"
+        green "Created ${CURRENT_DOMAIN} nodejs site\n"
     fi
 fi
 }
@@ -130,7 +130,7 @@ URL="vless://${UUID}@${CFIP}:443?encryption=none&security=tls&sni=${CURRENT_DOMA
 [[ "$SOCKS" == "true" ]] && yellow "\nsocks://${USERNAME}:${USERNAME}@${IP}:${S5_PORT}#${NAME}\n\nTG代理:    https://t.me/socks?server=${IP}&port=${S5_PORT}&user=${USERNAME}&pass=${USERNAME}\n\n只可作为proxyip或tg代理使用,其他软件测试不通！！!\n"
 
 green "\n\n$URL\n\n"
-green "节点订阅链接(base64): https://${CURRENT_DOMAIN}/${SUB_TOKEN}   (适用于v2rayN,nekobox,小火箭,karing,loon等)\n"
+green "Node subscription link (base64): https://${CURRENT_DOMAIN}/${SUB_TOKEN}   (Applicable to v2rayN, nekobox, small rocket, karing, loon, etc.)\n"
 
 worker_scrpit="
 export default {
@@ -154,17 +154,15 @@ function getRandomArray(array) {
 }"
 
 if [[ -z "$DOMAIN" ]]; then
-    purple "如果想要节点使用优选ip,请在cloudflared创建一个workers,复制以下代码部署并绑定域名,然后将节点里的host和sni改为绑定的域名即可换优选域名或优选ip"
-    green "\ncloudflared workers代码如下: \n"
+    purple "If you want the node to use the preferred IP, please create a worker in cloudflared, copy the following code to deploy and bind the domain name, and then change the host and sni in the node to the bound domain name to change the preferred domain name or preferred IP."
+    green "\ncloudflared The workers code is as follows: \n"
     echo "$worker_scrpit" | sed 's/^/    /' | sed 's/^ *$//'
 else
-    purple "请将 ${yellow}${CURRENT_DOMAIN} ${purple}域名在cloudflare添加A记录指向 ${yellow}${IP} ${purple}并开启小黄云,才可使用节点,可更换优选域名或优选ip${re}\n\n"
+    purple "请将 ${yellow}${CURRENT_DOMAIN} ${purple}Add an A record to the domain name in cloudflare ${yellow}${IP} ${purple}And open Link to use the node, you can change the preferred domain name or preferred IP${re}\n\n"
 fi
 
-yellow "\nServ00|ct8老王vless-ws-tls|socks5一键安装脚本\n"
-echo -e "${green}反馈论坛：${re}${yellow}https://bbs.vps8.me${re}\n"
-echo -e "${green}TG反馈群组：${re}${yellow}https://t.me/vps888${re}\n"
-purple "转载请著名出处，请勿滥用\n"
+yellow "\nServ00|ct8 Laowang vless-ws-tls|socks5 one-click installation script\n"
+echo -e "${green}Feedback Forum：${re}${yellow}https://bbs.vps8.me${re}\n"
 green "Running done!\n"
 
 }
